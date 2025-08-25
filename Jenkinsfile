@@ -3,14 +3,12 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "project-libra:uat"
-        DOCKERHUB_USER = "jeevannaik1999"
     }
 
     stages {
-
         stage('Clone Repo') {
             steps {
-                git branch: 'main', url: 'https://github.com/Jeevan-Naik/Project-Libra-AWS.git'
+                git 'https://github.com/Jeevan-Naik/Project-Libra-AWS.git'
             }
         }
 
@@ -22,31 +20,24 @@ pipeline {
 
         stage('Run Unit Tests') {
             steps {
-                bat 'echo "Running tests (add pytest here if needed)"'
+                bat 'echo "Running tests (replace with pytest if needed)"'
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'DOCKERHUB_PASS')]) {
-                    bat """
-                    REM Login to DockerHub securely using PAT
-                    echo %DOCKERHUB_PASS% | docker login --username %DOCKERHUB_USER% --password-stdin
-
-                    REM Tag the Docker image
-                    docker tag %DOCKER_IMAGE% %DOCKERHUB_USER%/%DOCKER_IMAGE%
-
-                    REM Push the image
-                    docker push %DOCKERHUB_USER%/%DOCKER_IMAGE%
-                    """
+                withCredentials([usernamePassword(credentialsId: 'dockerhub',
+                                                 usernameVariable: 'DOCKERHUB_USER',
+                                                 passwordVariable: 'DOCKERHUB_PASS')]) {
+                    bat '''
+                        echo %DOCKERHUB_PASS% | docker login -u %DOCKERHUB_USER% --password-stdin
+                        docker tag project-libra:uat %DOCKERHUB_USER%/project-libra:uat
+                        docker push %DOCKERHUB_USER%/project-libra:uat
+                    '''
                 }
             }
         }
 
         stage('Deploy to UAT') {
             steps {
-                bat 'docker-compose -f docker-compose.uat.yml up -d --build'
-            }
-        }
-    }
-}
+                bat 'echo "Deploying
