@@ -3,15 +3,17 @@ pipeline {
 
     environment {
         IMAGE_NAME = "project-libra"
-        IMAGE_TAG = "uat"
+        IMAGE_TAG  = "uat"
         CONTAINER_NAME = "project-libra-container"
-        DOCKERHUB_CRED = credentials('dockerhub') // Optional if pushing to DockerHub
+        DOCKERHUB_CRED = credentials('dockerhub-cred') // Jenkins credentials ID
     }
 
     stages {
+
         stage('Checkout SCM') {
             steps {
-                checkout scm
+                // Checkout your public GitHub repo
+                git url: 'https://github.com/Jeevan-Naik/Project-Libra-AWS.git', branch: 'main'
             }
         }
 
@@ -23,21 +25,24 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                // Stop and remove old container if exists
-                bat "docker stop ${CONTAINER_NAME} || echo No old container"
-                bat "docker rm ${CONTAINER_NAME} || echo No old container"
-                
-                // Run new container
-                bat "docker run -d --name ${CONTAINER_NAME} -p 8080:80 ${IMAGE_NAME}:${IMAGE_TAG}"
+                bat """
+                docker stop ${CONTAINER_NAME} 2>nul || echo No old container
+                docker rm ${CONTAINER_NAME} 2>nul || echo No old container
+                docker run -d --name ${CONTAINER_NAME} -p 8080:80 ${IMAGE_NAME}:${IMAGE_TAG}
+                """
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    bat "echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin"
-                    bat "docker tag ${IMAGE_NAME}:${IMAGE_TAG} %DOCKER_USER%/${IMAGE_NAME}:${IMAGE_TAG}"
-                    bat "docker push %DOCKER_USER%/${IMAGE_NAME}:${IMAGE_TAG}"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', 
+                                                 usernameVariable: 'DOCKERHUB_USER', 
+                                                 passwordVariable: 'DOCKERHUB_PASS')]) {
+                    bat """
+                    echo %DOCKERHUB_PASS% | docker login -u %DOCKERHUB_USER% --password-stdin
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} %DOCKERHUB_USER%/${IMAGE_NAME}:${IMAGE_TAG}
+                    docker push %DOCKERHUB_USER%/${IMAGE_NAME}:${IMAGE_TAG}
+                    """
                 }
             }
         }
@@ -46,10 +51,11 @@ pipeline {
     post {
         always {
             echo "Cleaning up local Docker containers/images"
-            // Ignore errors to prevent pipeline failure
-            bat "docker stop ${CONTAINER_NAME} || echo No container"
-            bat "docker rm ${CONTAINER_NAME} || echo No container"
-            bat "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || echo No image"
+            bat """
+            docker stop ${CONTAINER_NAME} 2>nul || echo No container
+            docker rm ${CONTAINER_NAME} 2>nul || echo No container
+            docker rmi ${IMAGE_NAME}:${IMAGE_TAG} 2>nul || echo No image
+            """
         }
     }
 }
