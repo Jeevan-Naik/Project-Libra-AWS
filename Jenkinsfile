@@ -51,9 +51,10 @@ pipeline {
     post {
         always {
             echo 'Cleaning up local Docker containers/images'
-            bat "docker stop ${CONTAINER_NAME} || echo No container"
-            bat "docker rm ${CONTAINER_NAME} || echo No container"
-            bat "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || echo No image"
+        // Ignore errors if container/image does not exist
+        bat "docker stop ${CONTAINER_NAME} || echo No container"
+        bat "docker rm ${CONTAINER_NAME} || echo No container"
+        bat "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || echo No image"
         }
     }
 }
