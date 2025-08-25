@@ -26,15 +26,20 @@ pipeline {
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'DOCKERHUB_PASS')]) {
-                    bat '''
-                    echo %DOCKERHUB_PASS% | docker login -u jeevannaik1999 --password-stdin
-                    docker tag %DOCKER_IMAGE% jeevannaik1999/%DOCKER_IMAGE%
-                    docker push jeevannaik1999/%DOCKER_IMAGE%
-                    '''
-                }
-            }
+        withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'DOCKERHUB_PASS')]) {
+            bat """
+            REM Log in to DockerHub securely
+            echo %DOCKERHUB_PASS% | docker login -u jeevannaik1999 --password-stdin
+
+            REM Tag the image
+            docker tag %DOCKER_IMAGE% jeevannaik1999/%DOCKER_IMAGE%
+
+            REM Push the image
+            docker push jeevannaik1999/%DOCKER_IMAGE%
+            """
         }
+    }
+}
 
         stage('Deploy to UAT') {
             steps {
