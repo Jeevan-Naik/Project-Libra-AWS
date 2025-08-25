@@ -14,20 +14,20 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $DOCKER_IMAGE .'
+                bat 'docker build -t $DOCKER_IMAGE .'
             }
         }
 
         stage('Run Unit Tests') {
             steps {
-                sh 'echo "Running tests (can add pytest here later)"'
+                bat 'echo "Running tests (can add pytest here later)"'
             }
         }
 
         stage('Push to DockerHub') {
             steps {
                 withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'DOCKERHUB_PASS')]) {
-                    sh '''
+                    bat '''
                     echo $DOCKERHUB_PASS | docker login -u jeevannaik1999 --password-stdin
                     docker tag $DOCKER_IMAGE jeevannaik1999/$DOCKER_IMAGE
                     docker push jeevannaik1999/$DOCKER_IMAGE
@@ -38,7 +38,7 @@ pipeline {
 
         stage('Deploy to UAT') {
             steps {
-                sh 'docker-compose -f docker-compose.uat.yml up -d --build'
+                bat 'docker-compose -f docker-compose.uat.yml up -d --build'
             }
         }
     }
