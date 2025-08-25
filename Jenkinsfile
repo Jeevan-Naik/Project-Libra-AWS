@@ -18,9 +18,9 @@ pipeline {
             }
         }
 
-        stage('Run Unit Tests') {
+        stage('Run Container') {
             steps {
-                bat 'echo "Running tests (replace with pytest if needed)"'
+                bat 'docker run -d --name project-libra-container -p 8080:80 %DOCKER_IMAGE%'
             }
         }
 
@@ -38,6 +38,10 @@ pipeline {
             }
         }
 
-        stage('Deploy to UAT') {
+        stage('Deploy') {
             steps {
-                bat 'echo "Deploying
+                bat 'echo Deploying container...'
+            }
+        }
+    }
+}
