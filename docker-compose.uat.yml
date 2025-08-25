@@ -1,0 +1,33 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:14
+    container_name: postgres_db_uat
+    restart: always
+    environment:
+      POSTGRES_DB: libra_db
+      POSTGRES_USER: libra_user
+      POSTGRES_PASSWORD: libra_pass
+    volumes:
+      - postgres_data_uat:/var/lib/postgresql/data
+
+  web:
+    image: jeevannaik1999/project-libra:uat   # Use the image pushed from Jenkins
+    container_name: django_app_uat
+    restart: always
+    command: >
+      sh -c "python manage.py migrate && gunicorn lms.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      DB_NAME: libra_db
+      DB_USER: libra_user
+      DB_PASSWORD: libra_pass
+      DB_HOST: db
+      DB_PORT: 5432
+
+volumes:
+  postgres_data_uat:
