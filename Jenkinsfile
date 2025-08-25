@@ -2,47 +2,58 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "project-libra:uat"
+        IMAGE_NAME = "project-libra"
+        TAG = "uat"
+        CONTAINER_NAME = "project-libra-container"
     }
 
     stages {
-        stage('Clone Repo') {
+        stage('Checkout GitHub Repo') {
             steps {
+                // Public repo → no credentials needed
                 git branch: 'main', url: 'https://github.com/Jeevan-Naik/Project-Libra-AWS.git'
-
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                bat 'docker build -t %DOCKER_IMAGE% .'
+                bat "docker build -t ${IMAGE_NAME}:${TAG} ."
             }
         }
 
         stage('Run Container') {
             steps {
-                bat '''
-                docker stop project-libra-container || echo No old container
-                docker rm project-libra-container || echo No old container
-                docker run -d --name project-libra-container -p 8080:80 %DOCKER_IMAGE%
-                '''
+                bat """
+                docker stop ${CONTAINER_NAME} || echo No old container
+                docker rm ${CONTAINER_NAME} || echo No old container
+                docker run -d --name ${CONTAINER_NAME} -p 8080:80 ${IMAGE_NAME}:${TAG}
+                """
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                // No login needed for public repo
-                bat '''
-                docker tag %DOCKER_IMAGE% jeevannaik1999/project-libra:uat
-                docker push jeevannaik1999/project-libra:uat
-                '''
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', 
+                                                 usernameVariable: 'DOCKERHUB_USER', 
+                                                 passwordVariable: 'DOCKERHUB_PASS')]) {
+                    bat """
+                    echo %DOCKERHUB_PASS% | docker login -u %DOCKERHUB_USER% --password-stdin
+                    docker tag ${IMAGE_NAME}:${TAG} %DOCKERHUB_USER%/${IMAGE_NAME}:${TAG}
+                    docker push %DOCKERHUB_USER%/${IMAGE_NAME}:${TAG}
+                    """
+                }
             }
         }
+    }
 
-        stage('Deploy') {
-            steps {
-                bat 'echo Deploying container...'
-            }
+    post {
+        always {
+            echo "Cleaning up local Docker containers/images"
+            bat """
+            docker stop ${CONTAINER_NAME} || echo No container
+            docker rm ${CONTAINER_NAME} || echo No container
+            docker rmi ${IMAGE_NAME}:${TAG} || echo No image
+            """
         }
     }
 }
