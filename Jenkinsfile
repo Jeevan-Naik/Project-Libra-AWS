@@ -27,16 +27,16 @@ pipeline {
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'DOCKERHUB_PASS')]) {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
                     bat """
-                    REM Login to DockerHub securely using PAT
-                    echo %DOCKERHUB_PASS% | docker login --username jeevannaik1999 --password-stdin
+                    REM Login to DockerHub using username + PAT
+                    echo %DOCKERHUB_PASS% | docker login -u %DOCKERHUB_USER% --password-stdin
 
                     REM Tag the Docker image
-                    docker tag %DOCKER_IMAGE% jeevannaik1999/%DOCKER_IMAGE%
+                    docker tag %DOCKER_IMAGE% %DOCKERHUB_USER%/%DOCKER_IMAGE%
 
                     REM Push the image
-                    docker push jeevannaik1999/%DOCKER_IMAGE%
+                    docker push %DOCKERHUB_USER%/%DOCKER_IMAGE%
                     """
                 }
             }
