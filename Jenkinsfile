@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "project-libra:uat"
+        DOCKERHUB_USER = "jeevannaik1999"
     }
 
     stages {
@@ -27,10 +28,10 @@ pipeline {
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKERHUB_USER', passwordVariable: 'DOCKERHUB_PASS')]) {
+                withCredentials([string(credentialsId: 'dockerhub-pass', variable: 'DOCKERHUB_PASS')]) {
                     bat """
-                    REM Login to DockerHub using username + PAT
-                    echo %DOCKERHUB_PASS% | docker login -u %DOCKERHUB_USER% --password-stdin
+                    REM Login to DockerHub securely using PAT
+                    echo %DOCKERHUB_PASS% | docker login --username %DOCKERHUB_USER% --password-stdin
 
                     REM Tag the Docker image
                     docker tag %DOCKER_IMAGE% %DOCKERHUB_USER%/%DOCKER_IMAGE%
