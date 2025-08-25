@@ -14,32 +14,37 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                bat "docker build -t %DOCKER_IMAGE% ."
+                bat 'docker build -t %DOCKER_IMAGE% .'
             }
         }
 
         stage('Run Container') {
             steps {
-                bat "docker rm -f project-libra-container || echo No old container"
-                bat "docker run -d --name project-libra-container -p 8080:80 %DOCKER_IMAGE%"
+                bat '''
+                    docker stop project-libra-container || true
+                    docker rm project-libra-container || true
+                    docker run -d --name project-libra-container -p 8080:80 %DOCKER_IMAGE%
+                '''
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub',
-                                                  usernameVariable: 'DOCKERHUB_USER',
-                                                  passwordVariable: 'DOCKERHUB_PASS')]) {
-                    bat "echo %DOCKERHUB_PASS% | docker login -u %DOCKERHUB_USER% --password-stdin"
-                    bat "docker tag project-libra:uat %DOCKERHUB_USER%/project-libra:uat"
-                    bat "docker push %DOCKERHUB_USER%/project-libra:uat"
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials',
+                                                 usernameVariable: 'DOCKERHUB_USER',
+                                                 passwordVariable: 'DOCKERHUB_PASS')]) {
+                    bat """
+                        echo %DOCKERHUB_PASS% | docker login -u %DOCKERHUB_USER% --password-stdin
+                        docker tag project-libra:uat %DOCKERHUB_USER%/project-libra:uat
+                        docker push %DOCKERHUB_USER%/project-libra:uat
+                    """
                 }
             }
         }
 
         stage('Deploy') {
             steps {
-                bat "echo Deploying container..."
+                bat 'echo Deploying container...'
             }
         }
     }
