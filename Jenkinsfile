@@ -8,7 +8,8 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/Jeevan-Naik/Project-Libra-AWS.git'
+                git branch: 'main',
+                    url: 'https://github.com/Jeevan-Naik/Project-Libra-AWS.git'
             }
         }
 
@@ -20,15 +21,22 @@ pipeline {
 
         stage('Run Container') {
             steps {
-                bat 'docker run -d --name project-libra-container -p 8080:80 %DOCKER_IMAGE%'
+                // Stop and remove old container if running
+                bat '''
+                    docker stop project-libra-container || exit 0
+                    docker rm project-libra-container || exit 0
+                    docker run -d --name project-libra-container -p 8080:80 %DOCKER_IMAGE%
+                '''
             }
         }
 
         stage('Push to DockerHub') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub',
-                                                 usernameVariable: 'DOCKERHUB_USER',
-                                                 passwordVariable: 'DOCKERHUB_PASS')]) {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub',
+                    usernameVariable: 'DOCKERHUB_USER',
+                    passwordVariable: 'DOCKERHUB_PASS'
+                )]) {
                     bat '''
                         echo %DOCKERHUB_PASS% | docker login -u %DOCKERHUB_USER% --password-stdin
                         docker tag project-libra:uat %DOCKERHUB_USER%/project-libra:uat
