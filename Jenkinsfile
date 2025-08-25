@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
-                git 'https://github.com/Jeevan-Naik/Project-Libra-AWS.git'
+                git branch: 'main', url: 'https://github.com/Jeevan-Naik/Project-Libra-AWS.git'
             }
         }
 
@@ -20,6 +20,7 @@ pipeline {
 
         stage('Run Container') {
             steps {
+                bat "docker rm -f project-libra-container || echo No old container"
                 bat "docker run -d --name project-libra-container -p 8080:80 %DOCKER_IMAGE%"
             }
         }
@@ -29,12 +30,6 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub',
                                                   usernameVariable: 'DOCKERHUB_USER',
                                                   passwordVariable: 'DOCKERHUB_PASS')]) {
-
-                    // Debug check (optional)
-                    bat "echo Username: %DOCKERHUB_USER%"
-                    bat "echo Token length: %DOCKERHUB_PASS:~0,4%****"
-
-                    // DockerHub login & push
                     bat "echo %DOCKERHUB_PASS% | docker login -u %DOCKERHUB_USER% --password-stdin"
                     bat "docker tag project-libra:uat %DOCKERHUB_USER%/project-libra:uat"
                     bat "docker push %DOCKERHUB_USER%/project-libra:uat"
